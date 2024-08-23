@@ -4,7 +4,7 @@ const userController = require('../controller/userController');
 
 const router = express.Router();
 
-router.get('/dashboard', userController.dashboardPage);
+router.get('/index', userController.dashboardPage);
 
 module.exports = router;
 

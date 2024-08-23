@@ -1,13 +1,15 @@
 // controllers/authController.js
 const User = require('../models/user');
 const bcrypt = require('bcryptjs');
+const jwt = require('jsonwebtoken');
+
 
 exports.registerPage = (req, res) => {
     res.render('register');
 };
 
 exports.registerUser = async (req, res) => {
-    const { username, email, password, password2 } = req.body;
+    const { username, email, password, password2} = req.body;
     let errors = [];
 
     if (!username || !email || !password || !password2) {
@@ -31,7 +33,7 @@ exports.registerUser = async (req, res) => {
             errors.push({ msg: 'El correo electrónico ya está registrado' });
             res.render('register', { errors, username, email, password, password2 });
         } else {
-            const newUser = new User({ username, email, password });
+            const newUser = new User({ username, email, password});
 
             // Encriptar la contraseña
             bcrypt.genSalt(10, (err, salt) => {
@@ -55,29 +57,44 @@ exports.loginPage = (req, res) => {
 };
 
 exports.loginUser = async (req, res) => {
-    const { email, password } = req.body;
+    const { username, password } = req.body;
 
-    const user = await User.findOne({ email });
+    try {
+        // Buscar usuario por nombre de usuario
+        const user = await User.findOne({ username });
 
-    if (!user) {
-        req.flash('error_msg', 'Usuario no encontrado');
-        return res.redirect('/login');
-    }
+        if (user && bcrypt.compareSync(password, user.password)) {
+            // Generar el token JWT
+            const token = jwt.sign(
+                { id: user._id, role: user.role },
+                process.env.JWT_SECRET || 'Unsta', // Es mejor utilizar una variable de entorno para la clave secreta
+                { expiresIn: '1h' }
+            );
 
-    bcrypt.compare(password, user.password, (err, isMatch) => {
-        if (err) throw err;
+            // Guardar el token en una cookie
+            res.cookie('authToken', token, {
+                httpOnly: true, 
+                secure: process.env.NODE_ENV === 'production' // Solo utilizar 'secure' en producción
+            });
 
-        if (isMatch) {
-            req.session.user = user;
-            res.redirect('/dashboard');
+            // Redirigir al usuario según su rol
+            if (user.role === 'admin') {
+                return res.redirect('admin/dashboard');
+            } if(user.role === 'user') {
+                return res.redirect('/');
+            }
         } else {
-            req.flash('error_msg', 'Contraseña incorrecta');
-            res.redirect('/login');
+            // Si las credenciales son incorrectas
+            res.render('login', { error: 'Credenciales incorrectas' });
         }
-    });
+    } catch (err) {
+        console.error(err);
+        res.status(500).send('Error en el servidor');
+    }
 };
 
 exports.logoutUser = (req, res) => {
-    req.session.destroy();
-    res.redirect('/login');
+    res.clearCookie('authToken'); // Elimina la cookie del token
+    res.redirect('/login');   // Redirige a la página de inicio de sesión
 };
+
