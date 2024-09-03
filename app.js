@@ -11,7 +11,8 @@ const path = require('path');
 const productoRoutes = require('./routes/productoRoutes');
 const adminMiddleware = require('./middleware/adminMiddleware');
 const adminRoutes = require('./routes/adminRoutes');
-const cookieParser = require('cookie-parser')
+const cookieParser = require('cookie-parser');
+const cors = require('cors');
 
 const app = express();
 
@@ -19,6 +20,18 @@ const app = express();
 mongoose.connect('mongodb://localhost:27017/login-app')
     .then(() => console.log('Conectado a MongoDB'))
     .catch(err => console.error('Error al conectar a MongoDB:', err));
+
+app.use(express.json());
+
+// Configuración básica de CORS
+app.use(cors());
+
+// Configuración avanzada de CORS (opcional)
+app.use(cors({
+  origin: 'http://localhost:4200', // Reemplaza con la URL de tu frontend
+  methods: ['GET', 'POST', 'PUT', 'DELETE'], // Métodos permitidos
+  allowedHeaders: ['Content-Type', 'Authorization'] // Cabeceras permitidas
+}));
 
 
 // Middleware

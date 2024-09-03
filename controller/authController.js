@@ -79,9 +79,9 @@ exports.loginUser = async (req, res) => {
 
             // Redirigir al usuario según su rol
             if (user.role === 'admin') {
-                return res.redirect('admin/dashboard');
-            } if(user.role === 'user') {
-                return res.redirect('/');
+                return res.redirect('/admin/dashboard'); // Asegúrate de que esta ruta sea correcta
+            } else if(user.role === 'user') {
+                return res.redirect('/'); // Asegúrate de que esta ruta sea correcta
             }
         } else {
             // Si las credenciales son incorrectas
